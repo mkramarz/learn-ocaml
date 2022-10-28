@@ -96,7 +96,28 @@ app.post("/eval", function (req, res)
   }
 });  
 
-
+app.post("/toplevel", function(req, res) {
+  if (req.body) 
+  {
+    const split_array = req.body;
+    const collection = split_array[3];
+    let commandStr = split_array[4];
+    const obj = new Object();
+    obj.studentId = split_array[1];
+    obj.timestamp = new Date().toString();
+    obj.command = commandStr; 
+    obj.note = split_array[5];
+    const jsonString = JSON.stringify(obj);
+    const command = JSON.parse( jsonString ); // parse req.body as an object
+    db.collection(collection).insertOne(command);
+    console.log(command);
+    res.sendStatus(200); // success status
+  }
+  else
+  {
+    res.sendStatus(400);
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server running on port${port}`);

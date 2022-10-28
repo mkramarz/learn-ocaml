@@ -38,6 +38,15 @@ type t = {
   input: Learnocaml_toplevel_input.input;
 }
 
+
+type mongo_toplevel = 
+{ student_id : string ;
+  timestamp : string ;
+  collection : string ;
+  command : string ;
+  note : string
+}
+
 (* let set_timeout_prompt t f = t.timeout_prompt <- f
  * let set_flood_prompt t f = t.flood_prompt <- f
  * let set_on_enable_input t f = t.on_enable_input <- f
@@ -53,6 +62,34 @@ type t = {
  *   while !stop > !start && (ws s.[!stop])
  *   do decr stop done;
  *   String.sub s !start (!stop - !start + 1) *)
+
+ let arg name =
+  let args = ref (Js_utils.parse_fragment ()) in
+  List.assoc name !args
+
+let eval_unsafe s = Js.Unsafe.js_expr s
+let send_to_server content event note =
+  print_endline content ;
+ let stId = match Learnocaml_local_storage.(retrieve nickname) with
+   | nickname -> nickname
+   | exception Not_found -> ""
+ in
+ let command = content in
+ let url = Js.string @@  Js.to_string (eval_unsafe "window.location.protocol") ^
+       "//" ^
+       Js.to_string (eval_unsafe "window.location.hostname") ^ ":8000/" ^ event in 
+ let current_time = string_of_float(Unix.time ()) in 
+ let exercise_id = match Url.Current.path with
+   | "" :: "exercises" :: p | "exercises" :: p ->
+       String.concat "/" (List.map Url.urldecode (List.filter ((<>) "") p))
+   | _ -> arg "id"
+ in
+ let collection_name = event ^ "Code" ^ exercise_id in
+ let student_json = Json.output {student_id = stId; timestamp = current_time; collection = collection_name; command = command; note = note} in
+ let nodeRequest = XmlHttpRequest.create () in
+   nodeRequest ## _open (Js.string "POST") (url) (Js.bool true);
+   nodeRequest ## setRequestHeader (Js.string "Content-Type") (Js.string "application/json; charset=UTF-8"); 
+   nodeRequest ## send (Js.some student_json)
 
 let disable_input top =
   top.disabled <- top.disabled + 1 ;
@@ -130,6 +167,7 @@ let reset_with_timeout top ?timeout () =
       Lwt.return ()
 
 let reset top =
+  send_to_server "" "toplevel" "reset" ;
   let timeout _ = Lwt_js.sleep 2. in
   reset_with_timeout top ~timeout ()
 
@@ -173,6 +211,7 @@ let protect_execution top exec =
       thread
 
 let execute_phrase top ?timeout content =
+  send_to_server content "toplevel" "execution";
   input_focus top @@ fun () ->
   let phrase = Learnocaml_toplevel_output.phrase () in
   let pp_code = Learnocaml_toplevel_output.output_code ~phrase top.output in

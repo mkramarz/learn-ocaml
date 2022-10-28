@@ -2,10 +2,35 @@
  (name learnocaml_app_common)
  (wrapped false)
  (flags :standard -warn-error -9-27-32)
- (modules Learnocaml_local_storage
-          Learnocaml_config
+ (modules Learnocaml_config
           Server_caller
           Learnocaml_common)
+ (preprocess
+  (per_module ((pps js_of_ocaml.ppx)
+               Learnocaml_config
+               Server_caller)
+              ((pps ppx_ocplib_i18n js_of_ocaml.ppx)
+               Learnocaml_common)))
+ (libraries
+    ocplib-json-typed.browser
+    js_of_ocaml
+    js_of_ocaml.ppx
+    js_of_ocaml.tyxml
+    jsutils
+    learnocaml_local_storage
+    learnocaml_toplevel
+    learnocaml_repository
+    learnocaml_data
+    learnocaml_api
+    sha
+    ocplib_i18n)
+)
+
+(library
+ (name learnocaml_local_storage)
+ (wrapped false)
+ (flags :standard -warn-error -9-27-32)
+ (modules Learnocaml_local_storage)
  (preprocess
   (per_module ((pps js_of_ocaml.ppx)
                Learnocaml_config
@@ -19,13 +44,11 @@
     js_of_ocaml.ppx
     js_of_ocaml.tyxml
     jsutils
-    learnocaml_toplevel
     learnocaml_repository
     learnocaml_data
     learnocaml_api
     sha
-    ocplib_i18n)
-)
+    ocplib_i18n))
 
 (executable
  (name learnocaml_index_main)
